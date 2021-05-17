@@ -1,9 +1,12 @@
-﻿#include <iostream>
+#include <iostream>
 #include <string>
 #include <vector>
 #include <math.h>
+#include <Windows.h>
 
 const float pi = 3.1415926535897932384626433832;
+
+float go_to_base_trig_arg(float x);
 
 float my_abs(float x);
 float my_sin(float x);
@@ -34,12 +37,24 @@ bool two_always_true(float a, float b);
 bool check_pow(float a, float b);
 bool check_division(float a, float b);
 
+
+float go_to_base_trig_arg(float x)
+{
+    while (abs(x) > 2 * pi)
+    {
+        if (x > 0) x -= 2 * pi;
+        else x += 2 * pi;
+    }
+    return x;
+}
+
 float my_abs(float x)
 {
     return abs(x);
 }
 float my_sin(float x)
 {
+    x = go_to_base_trig_arg(x);
     const float eps = 0.0000000001;
     float element = x, sum = element;
     x = -x * x;
@@ -54,6 +69,7 @@ float my_sin(float x)
 }
 float my_cos(float x)
 {
+    x = go_to_base_trig_arg(x);
     const float eps = 0.0000000001;
     float element = 1, sum = element;
     x = -x * x;
@@ -280,7 +296,6 @@ bool check_division(float a, float b)
 
 enum id_lexemes
 {
-    //операции в приоритете
     //пре-унарные операторы, высший приоритет
     ABS, SIN, COS, TG, CTG, ARCSIN, ARCCOS, ARCTG, ARCCTG, EXP, LN, 
     //псевдо пре-унарный оператор
@@ -295,6 +310,10 @@ enum id_lexemes
     PLUS, MINUS,
     //технические вещи
     NUMBER, X, LEFT_BR, RIGHT_BR, COMMA, END
+};
+enum errors
+{
+    NON_ERROR, UNKNOWN_SYMBOL, UNKNOWN_FUNCTION, ERROR_SIGNS, REDUNDANT_SIGNS, IMPOSSIBLE_COUNT
 };
 class Lexeme
 {
@@ -336,6 +355,16 @@ public:
     int get_stat(id_lexemes i)
     {
         return stat[i];
+    }
+    //получить сумму видов лексем с id лежащими внутри (a,b)
+    int get_stat(id_lexemes a, id_lexemes b)
+    {
+        int answer = 0;
+        for (int i = a; i <= b; i++)
+        {
+            answer += stat[i];
+        }
+        return answer;
     }
     //переходим к следующей лексеме
     void go_next_lexeme()
@@ -422,13 +451,13 @@ public:
     {
         for (int i = a; i < b; i++)
         {
-            this->delete_lexeme(i);
+            this->delete_lexeme(a);
         }
-        stat[array[b].get_id()]--;
-        array[b] = paste;
+        stat[array[a].get_id()]--;
+        array[a] = paste;
         stat[paste.get_id()]++;
     }
-    int find_highest_comma(int& error)
+    int find_highest_comma(errors& error)
     {
         int answer = 0;
         bool found_comma = 0;
@@ -443,7 +472,7 @@ public:
                 }
                 else
                 {
-                    error = 1;
+                    error = ERROR_SIGNS;
                     return answer;
                 }
             }
@@ -455,16 +484,16 @@ public:
 
     }
     //проверить вектор на ошибки(избыточное использование знаков)
-    bool check_errors()
+    bool is_correct()
     {
         for (int i = 0; array[i].get_id() != END; i++)
         {
-            if (POW <= array[i].get_id() and array[i].get_id() <= MINUS and POW <= array[i + 1].get_id() and array[i].get_id() <= MINUS)
+            if (POW <= array[i].get_id() and array[i].get_id() <= MINUS and POW <= array[i + 1].get_id() and array[i+1].get_id() <= MINUS)
             {
-                return 1;
+                return 0;
             }
         }
-        return 0;
+        return 1;
     }
     //найти лексему с определённым id
     int find_id_lexeme(id_lexemes id)
@@ -496,11 +525,12 @@ public:
         }
     }
     //посчитать значение предложения
-    Lexeme count(int& error, std::vector<void*>& functions, std::vector<void*>& check_countable)
+    Lexeme count(errors& error, std::vector<void*>& functions, std::vector<void*>& check_countable)
     {
         Lexeme Answer = Lexeme(NUMBER);
+        //избавляемся от скобок
         set_pos(0);
-        while (get_lexeme().get_id() != END)
+        while (stat[LEFT_BR] > 0 and get_lexeme().get_id() != END)
         {
             if (get_lexeme().get_id() == LEFT_BR)
             {
@@ -508,10 +538,10 @@ public:
                 int b = find_right_bracket(a);
                 if (pos == 0 or get_previous_lexeme().get_id() != LOG)
                 {
-                    Sentence temp = create_lexeme_vector(a, b);
+                    Sentence temp = create_lexeme_vector(a+1, b-1);
                     Lexeme temp2 = temp.count(error, functions, check_countable);
                     replace_sector(a, b, temp2);
-                    if (error != 0)
+                    if (error != NON_ERROR)
                     {
                         return Answer;
                     }
@@ -535,7 +565,7 @@ public:
         }
         //избавляемся от функций
         set_pos(0);
-        while (get_lexeme().get_id() != END)
+        while (get_stat(ABS, LN) > 0 and get_lexeme().get_id() != END)
         {
             if (ABS <= get_lexeme().get_id() and get_lexeme().get_id() <= LN and get_next_lexeme().get_id() == NUMBER)
             {
@@ -543,14 +573,14 @@ public:
                 float value;              
                 if (reinterpret_cast<bool(*)(float)>(check_countable[get_lexeme().get_id()])(arguement) == 1)
                 {
-                    value = reinterpret_cast<float(*)(float)>(check_countable[get_lexeme().get_id()])(arguement);
+                    value = reinterpret_cast<float(*)(float)>(functions[get_lexeme().get_id()])(arguement);
                     replace_sector(pos, pos + 1, Lexeme(NUMBER, value));
                     //возвращемся назад, возможно мы сможем что-то ещё посчитать
                     if (pos > 0) go_back_lexeme();
                 }
                 else
                 {
-                    error = 2;
+                    error = IMPOSSIBLE_COUNT;
                     return Answer;
                 }
             }
@@ -560,7 +590,7 @@ public:
                 float b = get_next_lexeme(4).get_value();
                 if (reinterpret_cast<bool(*)(float, float)>(check_countable[get_lexeme().get_id()])(a, b) == 1)
                 {
-                    float value = reinterpret_cast<float(*)(float, float)>(check_countable[get_lexeme().get_id()])(a,b);
+                    float value = reinterpret_cast<float(*)(float, float)>(functions[get_lexeme().get_id()])(a,b);
                     replace_sector(pos, pos + 6, Lexeme(NUMBER, value));
                     //возвращемся назад, возможно мы сможем что-то ещё посчитать
                     if (pos > 0) go_back_lexeme();
@@ -570,36 +600,55 @@ public:
         }
         //избавляемся от факториалов
         set_pos(0);
-        while (get_lexeme().get_id() != END)
+        while (get_stat(FACTORIAL) > 0 and get_lexeme().get_id() != END)
         {
             if (get_lexeme().get_id() == NUMBER and get_next_lexeme().get_id() == FACTORIAL)
             {
                 float arguement = get_lexeme().get_value();
-                if (reinterpret_cast<bool(*)(float)>(check_countable[get_lexeme().get_id()])(arguement) == 1)
+                if (reinterpret_cast<bool(*)(float)>(check_countable[get_next_lexeme().get_id()])(arguement) == 1)
                 {
-                    float value = reinterpret_cast<float(*)(float)>(check_countable[get_lexeme().get_id()])(arguement);
+                    float value = reinterpret_cast<float(*)(float)>(functions[get_next_lexeme().get_id()])(arguement);
                     replace_sector(pos, pos + 1, Lexeme(NUMBER, value));
                     //не трогать
                     go_next_lexeme();
                 }
                 else
                 {
-                    error = 2;
+                    error = IMPOSSIBLE_COUNT;
                     return Answer;
                 }
             }
+            else go_next_lexeme();
+        }
+        //избавляемся от возведения в степень
+        set_pos(1);
+        while (get_stat(POW) > 0 and get_lexeme().get_id() != END)
+        {
+            if (pos > 0 and get_previous_lexeme().get_id() == NUMBER and get_lexeme().get_id() == POW and get_next_lexeme().get_id() == NUMBER)
+            {
+                float a = get_previous_lexeme().get_value();
+                float b = get_next_lexeme().get_value();
+                if (reinterpret_cast<bool(*)(float, float)>(check_countable[get_lexeme().get_id()])(a, b) == 1)
+                {
+                    float value = reinterpret_cast<float(*)(float, float)>(functions[get_lexeme().get_id()])(a, b);
+                    replace_sector(pos - 1, pos + 1, Lexeme(NUMBER, value));
+                    //возвращемся назад, возможно мы сможем что-то ещё посчитать
+                    if (pos > 0) go_back_lexeme();
+                }
+            }
+            else go_next_lexeme();
         }
         //избавляемся от умножения и деления
         set_pos(1);
-        while (get_lexeme().get_id() != END)
+        while (get_stat(MULT, DIVISION) > 0 and get_lexeme().get_id() != END)
         {
-            if (get_previous_lexeme().get_id() == NUMBER and (get_lexeme().get_id() == MULT or get_lexeme().get_id() == DIVISION) and get_next_lexeme().get_id() == NUMBER)
+            if (pos > 0 and get_previous_lexeme().get_id() == NUMBER and (get_lexeme().get_id() == MULT or get_lexeme().get_id() == DIVISION) and get_next_lexeme().get_id() == NUMBER)
             {
                 float a = get_previous_lexeme().get_value();
-                float b = get_previous_lexeme().get_value();
+                float b = get_next_lexeme().get_value();
                 if (reinterpret_cast<bool(*)(float, float)>(check_countable[get_lexeme().get_id()])(a, b) == 1)
                 {
-                    float value = reinterpret_cast<float(*)(float, float)>(check_countable[get_lexeme().get_id()])(a, b);
+                    float value = reinterpret_cast<float(*)(float, float)>(functions[get_lexeme().get_id()])(a, b);
                     replace_sector(pos-1, pos + 1, Lexeme(NUMBER, value));
                     //возвращемся назад, возможно мы сможем что-то ещё посчитать
                     if (pos > 0) go_back_lexeme();
@@ -609,15 +658,15 @@ public:
         }
         //избавляемся от сложения и вычитания
         set_pos(1);
-        while (get_lexeme().get_id() != END)
+        while (get_stat(PLUS, MINUS) > 0 and get_lexeme().get_id() != END)
         {
-            if (get_previous_lexeme().get_id() == NUMBER and (get_lexeme().get_id() == PLUS or get_lexeme().get_id() == MINUS) and get_next_lexeme().get_id() == NUMBER)
+            if (pos > 0 and get_previous_lexeme().get_id() == NUMBER and (get_lexeme().get_id() == PLUS or get_lexeme().get_id() == MINUS) and get_next_lexeme().get_id() == NUMBER)
             {
                 float a = get_previous_lexeme().get_value();
-                float b = get_previous_lexeme().get_value();
+                float b = get_next_lexeme().get_value();
                 if (reinterpret_cast<bool(*)(float, float)>(check_countable[get_lexeme().get_id()])(a, b) == 1)
                 {
-                    float value = reinterpret_cast<float(*)(float, float)>(check_countable[get_lexeme().get_id()])(a, b);
+                    float value = reinterpret_cast<float(*)(float, float)>(functions[get_lexeme().get_id()])(a, b);
                     replace_sector(pos - 1, pos + 1, Lexeme(NUMBER, value));
                     //возвращемся назад, возможно мы сможем что-то ещё посчитать
                     if (pos > 0) go_back_lexeme();
@@ -627,10 +676,11 @@ public:
         }
         set_pos(0);
         Answer = get_lexeme();
+        return Answer;
     }
 };
 
-Sentence convert_to_lexemes(std::string input, int& error)
+Sentence convert_to_lexemes(std::string input, errors& error)
 {
     Sentence answer;
     int pos = 0;
@@ -684,11 +734,11 @@ Sentence convert_to_lexemes(std::string input, int& error)
                 answer.add_lexeme(Lexeme(RIGHT_BR));
                 pos++;
             }
-            else if ('0' < input[pos] and input[pos] < '9')
+            else if ('0' <= input[pos] and input[pos] <= '9')
             {
                 std::string buffer;
                 bool use_point = 0;
-                while (pos < input.length() and (input[pos] == '.' or ('0' < input[pos] and input[pos] < '9')))
+                while (pos < input.length() and (input[pos] == '.' or ('0' <= input[pos] and input[pos] <= '9')))
                 {
                     if (input[pos] == '.')
                     {
@@ -699,7 +749,7 @@ Sentence convert_to_lexemes(std::string input, int& error)
                         }
                         else
                         {
-                            error = 1;
+                            error = ERROR_SIGNS;
                             return answer;
                         }
                     }
@@ -713,7 +763,7 @@ Sentence convert_to_lexemes(std::string input, int& error)
             else
             {
                 std::string buffer;
-                while (pos < input.length() and 'a' < input[pos] and input[pos] < 'z' or pos < input.length() and 'A' < input[pos] and input[pos] < 'Z')
+                while (pos < input.length() and 'a' <= input[pos] and input[pos] <= 'z' or pos < input.length() and 'A' <= input[pos] and input[pos] <= 'Z')
                 {
                     buffer.push_back(input[pos++]);
                 }
@@ -771,33 +821,35 @@ Sentence convert_to_lexemes(std::string input, int& error)
                 }
                 else
                 {
-                    error = 1;
+                    error = UNKNOWN_FUNCTION;
                     return answer;
                 }
             }
         }
         else
         {
-            error = 1;
+            error = UNKNOWN_SYMBOL;
             return answer;
         }
     }
     answer.add_lexeme(Lexeme(END));
-    if (answer.get_stat(LEFT_BR) == answer.get_stat(RIGHT_BR) and answer.check_errors() == 0)
+    if (answer.get_stat(LEFT_BR) == answer.get_stat(RIGHT_BR) and answer.is_correct() == 1)
     {
         return answer;
     }
     else
     {
-        error = 1;
+        error = ERROR_SIGNS;
         return answer;
     }
 }
 
 int main()
 {
+    SetConsoleCP(1251);
+    SetConsoleOutputCP(1251);
+    errors error = NON_ERROR;
     float x;
-    int error;
     std::vector<void*> functions;
     {
         functions.push_back(reinterpret_cast<void*>(my_abs));
@@ -838,8 +890,33 @@ int main()
     std::getline(std::cin, buffer);
     std::cin >> x;
     Sentence Base = convert_to_lexemes(buffer, error);
-    Base.substitute(x);
-    Base.count(error, functions, check_countable);
+    Sentence Current = Base;
+    Current.substitute(x);
+    Lexeme Test = Current.count(error, functions, check_countable);
+    if (error == NON_ERROR)
+    {
+        std::cout << "Значение в точке " << x << " равно: " << Test.get_value() << std::endl;
+    }
+    else if (error == UNKNOWN_SYMBOL)
+    {
+        std::cout << "В вводе допущена ошибка." << std::endl;
+    }
+    else if (error == UNKNOWN_FUNCTION)
+    {
+        std::cout << "Использована неизвестная функция" << std::endl;
+    }
+    else if (error == ERROR_SIGNS)
+    {
+        std::cout << "В знаках операций допущена ошибка." << std::endl;
+    }
+    else if (error == REDUNDANT_SIGNS)
+    {
+        std::cout << "Знаки операций использованы избытычно." << std::endl;
+    }
+    else if (error == IMPOSSIBLE_COUNT)
+    {
+        std::cout << "Функцию невозможно вычислить в точке " << x << std::endl;
+    }
 
 }
 
