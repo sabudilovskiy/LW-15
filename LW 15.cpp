@@ -1,45 +1,45 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <math.h>
+#include <cmath>
 #include <Windows.h>
 
-const float pi = 3.1415926535897932384626433832;
+const double pi = 3.1415926535897932384626433832;
 
-float go_to_base_trig_arg(float x);
+double go_to_base_trig_arg(double x);
 
-float my_abs(float x);
-float my_sin(float x);
-float my_cos(float x);
-float my_tg(float x);
-float my_ctg(float x);
-float my_arcsin(float x);
-float my_arccos(float x);
-float my_arctg(float x);
-float my_arcctg(float x);
-float my_exp(float x);
-float my_ln(float x);
-float my_log(float base, float x);
-float my_factorial(int a);
-float my_pow(float a, float b); //a^b
-float my_mult(float a, float b);
-float my_division(float a, float b);
-float my_plus(float a, float b);
-float my_minus(float a, float b);
+double my_abs(double x);
+double my_sin(double x);
+double my_cos(double x);
+double my_tg(double x);
+double my_ctg(double x);
+double my_arcsin(double x);
+double my_arccos(double x);
+double my_arctg(double x);
+double my_arcctg(double x);
+double my_exp(double x);
+double my_ln(double x);
+double my_log(double base, double x);
+double my_factorial(int a);
+double my_pow(double a, double b); //a^b
+double my_mult(double a, double b);
+double my_division(double a, double b);
+double my_plus(double a, double b);
+double my_minus(double a, double b);
 
-bool always_true(float x);
-bool check_tg(float x);
-bool check_ctg(float x);
-bool check_arcsin(float x);
-bool check_ln(float x);
-bool check_logarifm(float a, float b);
-bool check_factorial(float x);
-bool two_always_true(float a, float b);
-bool check_pow(float a, float b);
-bool check_division(float a, float b);
+bool always_true(double x);
+bool check_tg(double x);
+bool check_ctg(double x);
+bool check_arcsin(double x);
+bool check_ln(double x);
+bool check_logarifm(double a, double b);
+bool check_factorial(double x);
+bool two_always_true(double a, double b);
+bool check_pow(double a, double b);
+bool check_division(double a, double b);
 
 
-float go_to_base_trig_arg(float x)
+double go_to_base_trig_arg(double x)
 {
     while (abs(x) > 2 * pi)
     {
@@ -49,17 +49,17 @@ float go_to_base_trig_arg(float x)
     return x;
 }
 
-float my_abs(float x)
+double my_abs(double x)
 {
     return abs(x);
 }
-float my_sin(float x)
+double my_sin(double x)
 {
     x = go_to_base_trig_arg(x);
-    const float eps = 0.0000000001;
-    float element = x, sum = element;
+    const double eps = 0.0000000001;
+    double element = x, sum = element;
     x = -x * x;
-    float i = 3;
+    double i = 3;
     while (abs(element) > eps)
     {
         element *= x / (i * (i - 1));
@@ -68,13 +68,13 @@ float my_sin(float x)
     }
     return sum;
 }
-float my_cos(float x)
+double my_cos(double x)
 {
     x = go_to_base_trig_arg(x);
-    const float eps = 0.0000000001;
-    float element = 1, sum = element;
+    const double eps = 0.0000000001;
+    double element = 1, sum = element;
     x = -x * x;
-    float i = 2;
+    double i = 2;
     while (abs(element) > eps)
     {
         element *= x / (i * (i - 1));
@@ -83,37 +83,51 @@ float my_cos(float x)
     }
     return sum;
 }
-float my_tg(float x)
+double my_tg(double x)
 {
     return my_sin(x) / my_cos(x);
 }
-float my_ctg(float x)
+double my_ctg(double x)
 {
-    const float eps = 0.0000000001;
+    const double eps = 0.0000000001;
     return my_cos(x) / my_sin(x);
 }
-float my_arcsin(float x)
+double my_arcsin(double x)
 {
-    const float eps = 0.0000000001;
-    float element = x, sum = element;
-    x = x * x;
-    float i = 1;
-    while (abs(element) > eps)
+    if (x == 1)
     {
-        element *= x * (2 * i + 1) / ((2 * i + 2) * (2 * i + 3));
-        sum += element;
-        i++;
+        return pi / 2;
     }
-    return sum;
+    else if (x == -1)
+    {
+        return -pi / 2;
+    }
+    else if(abs(x) > 0.8)
+    {
+        return my_arctg(x / sqrt(1 - x * x));
+    }
+    else
+    {
+        const double eps = 0.0000000000000001;
+        double element = x, sum = element;
+        x = x * x;
+        double i = 1;
+        while (abs(element) > eps)
+        {
+            element *= x * (2 * i + 1) / ((2 * i + 2) * (2 * i + 3));
+            sum += element;
+            i++;
+        }
+        return sum;
+    }
 }
-float my_arccos(float x)
+double my_arccos(double x)
 {
-    const float eps = 0.0000000001;
     return pi / 2 - my_arcsin(x);
 }
-float my_arctg(float x)
+double my_arctg(double x)
 {
-    const float eps = 0.000001;
+    const double eps = 0.000001;
     if (abs(x) < 1)
     {
         double element = x, sum = element;
@@ -141,14 +155,14 @@ float my_arctg(float x)
         return sum;
     }
 }
-float my_arcctg(float x)
+double my_arcctg(double x)
 {
     return my_arctg(1/x);
 }
-float my_exp(float x)
+double my_exp(double x)
 {
-    const float eps = 0.0000000001;
-    float sum, element = 1;
+    const double eps = 0.0000000001;
+    double sum, element = 1;
     sum = element;
     int i = 1;
     while (abs(element) > eps)
@@ -159,14 +173,14 @@ float my_exp(float x)
     }
     return sum;
 }
-float my_ln(float x)
+double my_ln(double x)
 {
-    const float eps = 0.0000000001;
+    const double eps = 0.0000000001;
     if (x < 2)
     {
-        float element = x - 1;
-        float sum = element;
-        float i = 2;
+        double element = x - 1;
+        double sum = element;
+        double i = 2;
         while (abs(element) > eps)
         {
             element *= (1 - x) * (i - 1) / i;
@@ -178,9 +192,9 @@ float my_ln(float x)
     else if (x == 2) return 0.693147180559945309;
     else
     {
-        float element = 1 / (x - 1);
-        float sum = element;
-        float i = 2;
+        double element = 1 / (x - 1);
+        double sum = element;
+        double i = 2;
         while (abs(element) > eps)
         {
             element *= -1 / (x - 1) * (i - 1) / i;
@@ -190,31 +204,31 @@ float my_ln(float x)
         return sum + my_ln(x - 1);
     }
 }
-float my_log(float base, float x)
+double my_log(double base, double x)
 {
     return my_ln(x) / my_ln(base);
 }
-float my_factorial(int a)
+double my_factorial(int a)
 {
     int answer = 1;
     for (a; a > 1; a--) answer *= a;
     return answer;
 }
-float my_pow(float a, float b)
+double my_pow(double a, double b)
 {
-    const float eps = 0.0000000001;
+    const double eps = 0.0000000001;
     if (b - trunc(b) == 0)
     {
         if (b == 0) return 1;
         else if (b > 0)
         {
-            float answer = 1;
+            double answer = 1;
             for (; b > 0; b--)answer *= a;
             return answer;
         }
         else
         {
-            float answer = 1;
+            double answer = 1;
             for (; b > 0; b--)answer /= a;
             return answer;
         }
@@ -224,62 +238,62 @@ float my_pow(float a, float b)
         return my_exp(b * my_ln(a));
     }
 }
-float my_mult(float a, float b)
+double my_mult(double a, double b)
 {
     return a * b;
 }
-float my_division(float a, float b)
+double my_division(double a, double b)
 {
     return a / b;
 }
-float my_plus(float a, float b)
+double my_plus(double a, double b)
 {
     return a + b;
 }
-float my_minus(float a, float b)
+double my_minus(double a, double b)
 {
     return a - b;
 }
 
-bool always_true(float x)
+bool always_true(double x)
 {
     return 1;
 }
-bool check_tg(float x)
+bool check_tg(double x)
 {
     if (cos(x) == 0) return 0;
     else return 1;
 }
-bool check_ctg(float x)
+bool check_ctg(double x)
 {
     if (sin(x) == 0) return 0;
     else return 1;
 }
-bool check_arcsin(float x)
+bool check_arcsin(double x)
 {
-    if (abs(x) < 1) return 1;
+    if (abs(x) <= 1) return 1;
     else return 0;
 }
-bool check_ln(float x)
+bool check_ln(double x)
 {
     if (x > 0) return 1;
     else return 0;
 }
-bool check_logarifm(float a, float b)
+bool check_logarifm(double a, double b)
 {
     if (a > 0 and a != 1 and b > 0) return 1;
     else return 0;
 }
-bool check_factorial(float x)
+bool check_factorial(double x)
 {
     if (x > 0 and x - trunc(x) == 0) return 1;
     else return 0;
 }
-bool two_always_true(float a, float b)
+bool two_always_true(double a, double b)
 {
     return 1;
 }
-bool check_pow(float a, float b)
+bool check_pow(double a, double b)
 {
     if (a > 0) return 1;
     else
@@ -294,7 +308,7 @@ bool check_pow(float a, float b)
     }
     return 0;
 }
-bool check_division(float a, float b)
+bool check_division(double a, double b)
 {
     if (b == 0) return 0;
     else return 1;
@@ -325,9 +339,9 @@ class Lexeme
 {
 private:
     id_lexemes id;
-    float value;
+    double value;
 public:
-    Lexeme(id_lexemes id, float value = 0)
+    Lexeme(id_lexemes id, double value = 0)
     {
         this->id = id;
         this->value = value;
@@ -336,7 +350,7 @@ public:
     {
         return id;
     }
-    float get_value()
+    double get_value()
     {
         return value;
     }
@@ -391,7 +405,7 @@ public:
         array.erase(array.begin() + i);
     }
     //заменить лексему x на значение
-    void substitute(float x)
+    void substitute(double x)
     {
         if (stat[X] > 0)
         {
@@ -539,11 +553,11 @@ public:
         {
             if (ABS <= array[pos].get_id() and array[pos].get_id() <= LN and array[pos+1].get_id() == NUMBER)
             {
-                float arguement = array[pos+1].get_value();
-                float value;
-                if (reinterpret_cast<bool(*)(float)>(check_countable[array[pos].get_id()])(arguement) == 1)
+                double arguement = array[pos+1].get_value();
+                double value;
+                if (reinterpret_cast<bool(*)(double)>(check_countable[array[pos].get_id()])(arguement) == 1)
                 {
-                    value = reinterpret_cast<float(*)(float)>(functions[array[pos].get_id()])(arguement);
+                    value = reinterpret_cast<double(*)(double)>(functions[array[pos].get_id()])(arguement);
                     replace_sector(pos, pos + 1, Lexeme(NUMBER, value));
                     //возвращемся назад, возможно мы сможем что-то ещё посчитать
                     if (pos > 0) pos--;
@@ -556,11 +570,11 @@ public:
             }
             else if (array[pos].get_id() == LOG)
             {
-                float a = array[pos + 2].get_value();
-                float b = array[pos + 4].get_value();
-                if (reinterpret_cast<bool(*)(float, float)>(check_countable[array[pos].get_id()])(a, b) == 1)
+                double a = array[pos + 2].get_value();
+                double b = array[pos + 4].get_value();
+                if (reinterpret_cast<bool(*)(double, double)>(check_countable[array[pos].get_id()])(a, b) == 1)
                 {
-                    float value = reinterpret_cast<float(*)(float, float)>(functions[array[pos].get_id()])(a, b);
+                    double value = reinterpret_cast<double(*)(double, double)>(functions[array[pos].get_id()])(a, b);
                     replace_sector(pos, pos + 6, Lexeme(NUMBER, value));
                     //возвращемся назад, возможно мы сможем что-то ещё посчитать
                     if (pos > 0) pos--;
@@ -574,10 +588,10 @@ public:
         {
             if (array[pos].get_id() == NUMBER and array[pos+1].get_id() == FACTORIAL)
             {
-                float arguement = array[pos].get_value();
-                if (reinterpret_cast<bool(*)(float)>(check_countable[array[pos+1].get_id()])(arguement) == 1)
+                double arguement = array[pos].get_value();
+                if (reinterpret_cast<bool(*)(double)>(check_countable[array[pos+1].get_id()])(arguement) == 1)
                 {
-                    float value = reinterpret_cast<float(*)(float)>(functions[array[pos+1].get_id()])(arguement);
+                    double value = reinterpret_cast<double(*)(double)>(functions[array[pos+1].get_id()])(arguement);
                     replace_sector(pos, pos + 1, Lexeme(NUMBER, value));
                     //возвращаемся назад
                     pos = 0;
@@ -596,11 +610,11 @@ public:
         {
             if (pos > 0 and array[pos-1].get_id() == NUMBER and array[pos].get_id() == POW and array[pos+1].get_id() == NUMBER)
             {
-                float a = array[pos-1].get_value();
-                float b = array[pos+1].get_value();
-                if (reinterpret_cast<bool(*)(float, float)>(check_countable[array[pos].get_id()])(a, b) == 1)
+                double a = array[pos-1].get_value();
+                double b = array[pos+1].get_value();
+                if (reinterpret_cast<bool(*)(double, double)>(check_countable[array[pos].get_id()])(a, b) == 1)
                 {
-                    float value = reinterpret_cast<float(*)(float, float)>(functions[array[pos].get_id()])(a, b);
+                    double value = reinterpret_cast<double(*)(double, double)>(functions[array[pos].get_id()])(a, b);
                     replace_sector(pos - 1, pos + 1, Lexeme(NUMBER, value));
                     //возвращемся назад, возможно мы сможем что-то ещё посчитать
                     pos = 1;
@@ -614,11 +628,11 @@ public:
         {
             if (pos > 0 and array[pos-1].get_id() == NUMBER and (array[pos].get_id() == MULT or array[pos].get_id() == DIVISION) and array[pos+1].get_id() == NUMBER)
             {
-                float a = array[pos-1].get_value();
-                float b = array[pos+1].get_value();
-                if (reinterpret_cast<bool(*)(float, float)>(check_countable[array[pos].get_id()])(a, b) == 1)
+                double a = array[pos-1].get_value();
+                double b = array[pos+1].get_value();
+                if (reinterpret_cast<bool(*)(double, double)>(check_countable[array[pos].get_id()])(a, b) == 1)
                 {
-                    float value = reinterpret_cast<float(*)(float, float)>(functions[array[pos].get_id()])(a, b);
+                    double value = reinterpret_cast<double(*)(double, double)>(functions[array[pos].get_id()])(a, b);
                     replace_sector(pos-1, pos + 1, Lexeme(NUMBER, value));
                     //возвращемся назад, возможно мы сможем что-то ещё посчитать
                     pos = 1;
@@ -632,11 +646,11 @@ public:
         {
             if (pos > 0 and array[pos-1].get_id() == NUMBER and (array[pos].get_id() == PLUS or array[pos].get_id() == MINUS) and array[pos+1].get_id() == NUMBER)
             {
-                float a = array[pos-1].get_value();
-                float b = array[pos+1].get_value();
-                if (reinterpret_cast<bool(*)(float, float)>(check_countable[array[pos].get_id()])(a, b) == 1)
+                double a = array[pos-1].get_value();
+                double b = array[pos+1].get_value();
+                if (reinterpret_cast<bool(*)(double, double)>(check_countable[array[pos].get_id()])(a, b) == 1)
                 {
-                    float value = reinterpret_cast<float(*)(float, float)>(functions[array[pos].get_id()])(a, b);
+                    double value = reinterpret_cast<double(*)(double, double)>(functions[array[pos].get_id()])(a, b);
                     replace_sector(pos - 1, pos + 1, Lexeme(NUMBER, value));
                     //возвращемся назад, возможно мы сможем что-то ещё посчитать
                     if (pos > 0) pos--;
@@ -819,7 +833,7 @@ int main()
     SetConsoleCP(1251);
     SetConsoleOutputCP(1251);
     errors error = NON_ERROR;
-    float x;
+    double x;
     std::vector<void*> functions;
     {
         functions.push_back(reinterpret_cast<void*>(my_abs));
@@ -861,6 +875,7 @@ int main()
     std::string buffer;
     std::getline(std::cin, buffer);
     std::cin >> x;
+    for (double i = 0; i <= 200; i++) std::cout << i << " " << abs(my_arcsin(-1 + i / 100) - std::asin(-1 + i / 100)) << std::endl;
     Sentence Base = convert_to_lexemes(buffer, error);
     Sentence Current = Base;
     Current.substitute(x);
