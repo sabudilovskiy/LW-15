@@ -30,6 +30,7 @@ float my_minus(float a, float b);
 bool always_true(float x);
 bool check_tg(float x);
 bool check_ctg(float x);
+bool check_arcsin(float x);
 bool check_ln(float x);
 bool check_logarifm(float a, float b);
 bool check_factorial(float x);
@@ -254,6 +255,11 @@ bool check_ctg(float x)
     if (sin(x) == 0) return 0;
     else return 1;
 }
+bool check_arcsin(float x)
+{
+    if (abs(x) < 1) return 1;
+    else return 0;
+}
 bool check_ln(float x)
 {
     if (x > 0) return 1;
@@ -366,27 +372,6 @@ public:
         }
         return answer;
     }
-    //переходим к следующей лексеме
-    void go_next_lexeme()
-    {
-        if (pos < array.size() - 1)
-        {
-            pos++;
-        }
-    }
-    //возвращаемся к предыдущей лексеме
-    void go_back_lexeme()
-    {
-        if (pos > 0)
-        {
-            pos--;
-        }
-    }
-    //устанавить текующую лексему по номеру
-    void set_pos(int i)
-    {
-        pos = i;
-    }
     //получить номер лексемы-конца
     int get_end()
     {
@@ -397,21 +382,6 @@ public:
     {
         array.push_back(a);
         stat[a.get_id()]++;
-    }
-    //получить текущую лексему
-    Lexeme get_lexeme()
-    {
-        return array[pos];
-    }
-    //получить лексему на i номер больше
-    Lexeme get_next_lexeme(unsigned int i = 1)
-    {
-        return array[pos + i];
-    }
-    //получить лексему на i номер меньше
-    Lexeme get_previous_lexeme(unsigned int i = 1)
-    {
-        return array[pos-i];
     }
     //удалить лексему с таким номером
     void delete_lexeme(int i)
@@ -529,14 +499,14 @@ public:
     {
         Lexeme Answer = Lexeme(NUMBER);
         //избавляемся от скобок
-        set_pos(0);
-        while (stat[LEFT_BR] > 0 and get_lexeme().get_id() != END)
+        pos = 0;
+        while (stat[LEFT_BR] > 0 and array[pos].get_id() != END)
         {
-            if (get_lexeme().get_id() == LEFT_BR)
+            if (array[pos].get_id() == LEFT_BR)
             {
                 int a = pos;
                 int b = find_right_bracket(a);
-                if (pos == 0 or get_previous_lexeme().get_id() != LOG)
+                if (pos == 0 or array[pos-1].get_id() != LOG)
                 {
                     Sentence temp = create_lexeme_vector(a+1, b-1);
                     Lexeme temp2 = temp.count(error, functions, check_countable);
@@ -561,22 +531,22 @@ public:
                     }
                 }
             }
-            go_next_lexeme();
+            pos++;
         }
         //избавляемся от функций
-        set_pos(0);
-        while (get_stat(ABS, LN) > 0 and get_lexeme().get_id() != END)
+        pos = 0;
+        while (get_stat(ABS, LN) > 0 and array[pos].get_id() != END)
         {
-            if (ABS <= get_lexeme().get_id() and get_lexeme().get_id() <= LN and get_next_lexeme().get_id() == NUMBER)
+            if (ABS <= array[pos].get_id() and array[pos].get_id() <= LN and array[pos+1].get_id() == NUMBER)
             {
-                float arguement = get_next_lexeme().get_value();
-                float value;              
-                if (reinterpret_cast<bool(*)(float)>(check_countable[get_lexeme().get_id()])(arguement) == 1)
+                float arguement = array[pos+1].get_value();
+                float value;
+                if (reinterpret_cast<bool(*)(float)>(check_countable[array[pos].get_id()])(arguement) == 1)
                 {
-                    value = reinterpret_cast<float(*)(float)>(functions[get_lexeme().get_id()])(arguement);
+                    value = reinterpret_cast<float(*)(float)>(functions[array[pos].get_id()])(arguement);
                     replace_sector(pos, pos + 1, Lexeme(NUMBER, value));
                     //возвращемся назад, возможно мы сможем что-то ещё посчитать
-                    if (pos > 0) go_back_lexeme();
+                    if (pos > 0) pos--;
                 }
                 else
                 {
@@ -584,33 +554,33 @@ public:
                     return Answer;
                 }
             }
-            else if (get_lexeme().get_id() == LOG)
+            else if (array[pos].get_id() == LOG)
             {
-                float a = get_next_lexeme(2).get_value();
-                float b = get_next_lexeme(4).get_value();
-                if (reinterpret_cast<bool(*)(float, float)>(check_countable[get_lexeme().get_id()])(a, b) == 1)
+                float a = array[pos + 2].get_value();
+                float b = array[pos + 4].get_value();
+                if (reinterpret_cast<bool(*)(float, float)>(check_countable[array[pos].get_id()])(a, b) == 1)
                 {
-                    float value = reinterpret_cast<float(*)(float, float)>(functions[get_lexeme().get_id()])(a,b);
+                    float value = reinterpret_cast<float(*)(float, float)>(functions[array[pos].get_id()])(a, b);
                     replace_sector(pos, pos + 6, Lexeme(NUMBER, value));
                     //возвращемся назад, возможно мы сможем что-то ещё посчитать
-                    if (pos > 0) go_back_lexeme();
+                    if (pos > 0) pos--;
                 }
             }
-            else go_next_lexeme();
+            else pos++;
         }
         //избавляемся от факториалов
-        set_pos(0);
-        while (get_stat(FACTORIAL) > 0 and get_lexeme().get_id() != END)
+        pos = 0;
+        while (get_stat(FACTORIAL) > 0 and array[pos].get_id() != END)
         {
-            if (get_lexeme().get_id() == NUMBER and get_next_lexeme().get_id() == FACTORIAL)
+            if (array[pos].get_id() == NUMBER and array[pos+1].get_id() == FACTORIAL)
             {
-                float arguement = get_lexeme().get_value();
-                if (reinterpret_cast<bool(*)(float)>(check_countable[get_next_lexeme().get_id()])(arguement) == 1)
+                float arguement = array[pos].get_value();
+                if (reinterpret_cast<bool(*)(float)>(check_countable[array[pos+1].get_id()])(arguement) == 1)
                 {
-                    float value = reinterpret_cast<float(*)(float)>(functions[get_next_lexeme().get_id()])(arguement);
+                    float value = reinterpret_cast<float(*)(float)>(functions[array[pos+1].get_id()])(arguement);
                     replace_sector(pos, pos + 1, Lexeme(NUMBER, value));
-                    //не трогать
-                    go_next_lexeme();
+                    //возвращаемся назад
+                    pos = 0;
                 }
                 else
                 {
@@ -618,64 +588,64 @@ public:
                     return Answer;
                 }
             }
-            else go_next_lexeme();
+            else pos++;
         }
         //избавляемся от возведения в степень
-        set_pos(1);
-        while (get_stat(POW) > 0 and get_lexeme().get_id() != END)
+        pos = 1;
+        while (get_stat(POW) > 0 and array[pos].get_id() != END)
         {
-            if (pos > 0 and get_previous_lexeme().get_id() == NUMBER and get_lexeme().get_id() == POW and get_next_lexeme().get_id() == NUMBER)
+            if (pos > 0 and array[pos-1].get_id() == NUMBER and array[pos].get_id() == POW and array[pos+1].get_id() == NUMBER)
             {
-                float a = get_previous_lexeme().get_value();
-                float b = get_next_lexeme().get_value();
-                if (reinterpret_cast<bool(*)(float, float)>(check_countable[get_lexeme().get_id()])(a, b) == 1)
+                float a = array[pos-1].get_value();
+                float b = array[pos+1].get_value();
+                if (reinterpret_cast<bool(*)(float, float)>(check_countable[array[pos].get_id()])(a, b) == 1)
                 {
-                    float value = reinterpret_cast<float(*)(float, float)>(functions[get_lexeme().get_id()])(a, b);
+                    float value = reinterpret_cast<float(*)(float, float)>(functions[array[pos].get_id()])(a, b);
                     replace_sector(pos - 1, pos + 1, Lexeme(NUMBER, value));
                     //возвращемся назад, возможно мы сможем что-то ещё посчитать
-                    if (pos > 0) go_back_lexeme();
+                    pos = 1;
                 }
             }
-            else go_next_lexeme();
+            else pos++;
         }
         //избавляемся от умножения и деления
-        set_pos(1);
-        while (get_stat(MULT, DIVISION) > 0 and get_lexeme().get_id() != END)
+        pos = 1;
+        while (get_stat(MULT, DIVISION) > 0 and array[pos].get_id() != END)
         {
-            if (pos > 0 and get_previous_lexeme().get_id() == NUMBER and (get_lexeme().get_id() == MULT or get_lexeme().get_id() == DIVISION) and get_next_lexeme().get_id() == NUMBER)
+            if (pos > 0 and array[pos-1].get_id() == NUMBER and (array[pos].get_id() == MULT or array[pos].get_id() == DIVISION) and array[pos+1].get_id() == NUMBER)
             {
-                float a = get_previous_lexeme().get_value();
-                float b = get_next_lexeme().get_value();
-                if (reinterpret_cast<bool(*)(float, float)>(check_countable[get_lexeme().get_id()])(a, b) == 1)
+                float a = array[pos-1].get_value();
+                float b = array[pos+1].get_value();
+                if (reinterpret_cast<bool(*)(float, float)>(check_countable[array[pos].get_id()])(a, b) == 1)
                 {
-                    float value = reinterpret_cast<float(*)(float, float)>(functions[get_lexeme().get_id()])(a, b);
+                    float value = reinterpret_cast<float(*)(float, float)>(functions[array[pos].get_id()])(a, b);
                     replace_sector(pos-1, pos + 1, Lexeme(NUMBER, value));
                     //возвращемся назад, возможно мы сможем что-то ещё посчитать
-                    if (pos > 0) go_back_lexeme();
+                    pos = 1;
                 }
             }
-            else go_next_lexeme();
+            else pos++;
         }
         //избавляемся от сложения и вычитания
-        set_pos(1);
-        while (get_stat(PLUS, MINUS) > 0 and get_lexeme().get_id() != END)
+        pos = 1;
+        while (get_stat(PLUS, MINUS) > 0 and array[pos].get_id() != END)
         {
-            if (pos > 0 and get_previous_lexeme().get_id() == NUMBER and (get_lexeme().get_id() == PLUS or get_lexeme().get_id() == MINUS) and get_next_lexeme().get_id() == NUMBER)
+            if (pos > 0 and array[pos-1].get_id() == NUMBER and (array[pos].get_id() == PLUS or array[pos].get_id() == MINUS) and array[pos+1].get_id() == NUMBER)
             {
-                float a = get_previous_lexeme().get_value();
-                float b = get_next_lexeme().get_value();
-                if (reinterpret_cast<bool(*)(float, float)>(check_countable[get_lexeme().get_id()])(a, b) == 1)
+                float a = array[pos-1].get_value();
+                float b = array[pos+1].get_value();
+                if (reinterpret_cast<bool(*)(float, float)>(check_countable[array[pos].get_id()])(a, b) == 1)
                 {
-                    float value = reinterpret_cast<float(*)(float, float)>(functions[get_lexeme().get_id()])(a, b);
+                    float value = reinterpret_cast<float(*)(float, float)>(functions[array[pos].get_id()])(a, b);
                     replace_sector(pos - 1, pos + 1, Lexeme(NUMBER, value));
                     //возвращемся назад, возможно мы сможем что-то ещё посчитать
-                    if (pos > 0) go_back_lexeme();
+                    if (pos > 0) pos--;
                 }
             }
-            else go_next_lexeme();
+            else pos++;
         }
-        set_pos(0);
-        Answer = get_lexeme();
+        pos = 0;
+        Answer = array[pos];
         return Answer;
     }
 };
@@ -876,7 +846,9 @@ int main()
         for (int i = 0; i < 3; i++) check_countable.push_back(reinterpret_cast<void*>(always_true));
         check_countable.push_back(reinterpret_cast<void*>(check_tg));
         check_countable.push_back(reinterpret_cast<void*>(check_ctg));
-        for (int i = 0; i < 5; i++) check_countable.push_back(reinterpret_cast<void*>(always_true));
+        check_countable.push_back(reinterpret_cast<void*>(check_arcsin));
+        check_countable.push_back(reinterpret_cast<void*>(check_arcsin));
+        for (int i = 0; i < 3; i++) check_countable.push_back(reinterpret_cast<void*>(always_true));
         check_countable.push_back(reinterpret_cast<void*>(check_ln));
         check_countable.push_back(reinterpret_cast<void*>(check_logarifm));
         check_countable.push_back(reinterpret_cast<void*>(check_factorial));
@@ -919,4 +891,3 @@ int main()
     }
 
 }
-
